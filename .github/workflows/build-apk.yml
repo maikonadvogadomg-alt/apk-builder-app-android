@@ -1,0 +1,51 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Copiar assets web para Android (sem Capacitor CLI)
+        run: |
+          mkdir -p android/app/src/main/assets/www
+          if [ -d "www" ]; then
+            cp -r www/. android/app/src/main/assets/www/
+            echo "✅ Copiado www/ → Android assets"
+          elif [ -d "dist" ]; then
+            cp -r dist/. android/app/src/main/assets/www/
+            echo "✅ Copiado dist/ → Android assets"
+          else
+            echo "⚠️ Nenhuma pasta www/ ou dist/ encontrada"
+            ls -la
+          fi
+          echo "Arquivos em assets/www:"
+          ls android/app/src/main/assets/www/ | head -20
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build Debug APK
+        run: cd android && ./gradlew assembleDebug --no-daemon -Dorg.gradle.jvmargs=-Xmx2g
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: APK-Builder-App-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30

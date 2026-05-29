@@ -1,0 +1,2 @@
+rootProject.name = 'APKBuilderApp'
+include ':app'
